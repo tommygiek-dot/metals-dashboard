@@ -81,19 +81,26 @@ function lineChart(id, series, opts = {}) {
   const el = document.getElementById(id); if (!el) return;
   if (charts[id]) charts[id].destroy();
   const muted = css("--muted"), line = css("--line");
+  /* Align every series on the union of timestamps (category axis), so multi-series charts with different
+     dates still line up; missing values are gaps. */
+  const labels = [...new Set(series.flatMap(s => s.points.map(p => p.t)))].sort();
+  const fmtLabel = (t) => opts.intraday ? fmt.t(t).replace(/,? \d{4}/, "") : String(t).slice(0, 10);
+  const datasets = series.map((s, i) => {
+    const m = new Map(s.points.map(p => [p.t, p.v]));
+    return { label: s.label, data: labels.map(t => (m.has(t) && m.get(t) != null) ? m.get(t) : null),
+      borderColor: s.color || [css("--au"), css("--ag"), css("--info"), css("--mixed")][i % 4],
+      borderWidth: 1.6, pointRadius: 0, pointHitRadius: 6, tension: 0.15, yAxisID: s.axis || "y", fill: false, spanGaps: true, stepped: s.stepped || false };
+  });
   charts[id] = new Chart(el, {
     type: "line",
-    data: { datasets: series.map((s, i) => ({ label: s.label, data: s.points.map(p => ({ x: p.t, y: p.v })), borderColor: s.color || [css("--au"), css("--ag"), css("--info"), css("--mixed")][i % 4],
-      borderWidth: 1.6, pointRadius: 0, tension: 0.15, yAxisID: s.axis || "y", fill: false, stepped: s.stepped || false })) },
-    options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false },
-      parsing: false, normalized: true,
-      plugins: { legend: { display: series.length > 1, labels: { color: muted, boxWidth: 10 } }, tooltip: { callbacks: { title: (it) => String(it[0].raw.x).slice(0, 16).replace("T", " ") } } },
-      scales: { x: { type: "category", ticks: { color: muted, maxTicksLimit: 8, maxRotation: 0, callback: (v, i, arr) => { const l = series[0].points[i]?.t || ""; return l.slice(0, opts.intraday ? 16 : 10); } }, grid: { color: line } },
+    data: { labels, datasets },
+    options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false }, normalized: true,
+      plugins: { legend: { display: series.length > 1, labels: { color: muted, boxWidth: 10 } },
+        tooltip: { callbacks: { title: (it) => fmtLabel(labels[it[0].dataIndex]), label: (c) => `${c.dataset.label}: ${c.parsed.y == null ? "n/a" : Number(c.parsed.y).toLocaleString("en-US", { maximumFractionDigits: 2 })}` } } },
+      scales: { x: { ticks: { color: muted, maxTicksLimit: 8, maxRotation: 0, autoSkip: true, callback: (v, i) => fmtLabel(labels[i]) }, grid: { color: line } },
         y: { ticks: { color: muted }, grid: { color: line }, position: "left" },
         ...(series.some(s => s.axis === "y1") ? { y1: { position: "right", ticks: { color: muted }, grid: { drawOnChartArea: false } } } : {}) } }
   });
-  charts[id].data.labels = series[0].points.map(p => p.t);
-  charts[id].update();
 }
 
 /* ---------- Overview ---------- */
@@ -393,7 +400,65 @@ async function tabStatus() {
   $$("#tab-status button[data-job]").forEach(b => b.onclick = async () => { b.textContent = "…"; const r = await fetch(`/api/jobs/${b.dataset.job}/run`, { method: "POST" }).then(x => x.json()); alert(JSON.stringify(r)); loaded.status = false; showTab("status"); });
 }
 
-const TABS = { overview: tabOverview, today: tabToday, drivers: tabDrivers, positioning: tabPositioning, physical: tabPhysical, news: tabNews, events: tabEvents, fundamentals: tabFundamentals, research: tabResearch, status: tabStatus };
+/* ---------- Calculator ---------- */
+async function tabCalculator() {
+  const o = await api("/api/overview");
+  const px = {
+    gold: { futures: o.metals.gold.changes.last, spot: o.related.stak_spot_gold_daily?.changes?.last, ts: o.metals.gold.changes.last_ts, contract: o.metals.gold.front?.meta?.contract },
+    silver: { futures: o.metals.silver.changes.last, spot: o.related.stak_spot_silver_daily?.changes?.last, ts: o.metals.silver.changes.last_ts, contract: o.metals.silver.front?.meta?.contract },
+  };
+  const OZ = { oz: 1, g: 1 / 31.1034768, kg: 1000 / 31.1034768, ozav: 0.911458 };
+  const saved = (() => { try { return JSON.parse(localStorage.getItem("calc") || "{}"); } catch { return {}; } })();
+  const row = (m, label, dot) => `<div class="calc-row">
+      <div class="calc-h"><span class="dot ${dot}"></span> ${label} <span class="muted small">price basis: $<span id="px-${m}"></span> per troy oz</span></div>
+      <label>Amount <input type="number" id="amt-${m}" min="0" step="any" inputmode="decimal" value="${esc(saved["amt-" + m] ?? "")}" placeholder="0">
+        <select id="unit-${m}"><option value="oz">troy oz</option><option value="g">grams</option><option value="kg">kilograms</option><option value="ozav">ounces (avoirdupois)</option></select> = <b class="calc-out" id="val-${m}">$0</b></label>
+      <label>Or dollars <input type="number" id="usd-${m}" min="0" step="any" inputmode="decimal" value="${esc(saved["usd-" + m] ?? "")}" placeholder="0"> = <b class="calc-out" id="oz-${m}">0 troy oz</b> <span class="muted small" id="g-${m}"></span></label>
+    </div>`;
+  $("#tab-calculator").innerHTML = `<div class="grid c2">
+    <div class="card"><h2>Metal → dollars, dollars → metal</h2>
+      <div class="filters"><label class="muted small">Price basis <select id="basis">
+        <option value="futures">COMEX front-month futures (delayed)</option>
+        <option value="spot" ${px.gold.spot ? "" : "disabled"}>Aggregated spot (StakTrakr)</option>
+        <option value="custom">Custom prices</option></select></label>
+        <span id="custom-wrap" class="hidden">gold $<input type="number" id="cust-gold" step="any" style="width:110px"> silver $<input type="number" id="cust-silver" step="any" style="width:90px"></span></div>
+      ${row("gold", "Gold", "au")}${row("silver", "Silver", "ag")}
+      <div class="calc-total">Combined value <b id="val-total">$0</b></div>
+      <div class="prov">Troy ounce = 31.1035 g; a "1 oz" coin is one troy ounce; an avoirdupois ounce (kitchen scale) is 28.35 g. These are paper prices as of the last quote (<span id="calc-ts"></span>). Dealers buy below and sell above them, and coins and bars carry premiums, so an actual sale nets less and a purchase costs more (see the Physical tab for today's premiums).</div>
+    </div>
+    <div class="card"><h2>Common items at today's price</h2>
+      <table><thead><tr><th>Item</th><th class="num">Troy oz</th><th class="num">Metal value</th></tr></thead><tbody id="items"></tbody></table>
+      <div class="prov">Metal content only. Fractional coins trade at higher premiums than 1 oz pieces; sterling silver is 92.5% silver.</div>
+    </div></div>`;
+  const items = [["1 oz gold coin (Eagle, Buffalo, Maple)", "gold", 1], ["1/2 oz gold coin", "gold", 0.5], ["1/4 oz gold coin", "gold", 0.25], ["1/10 oz gold coin", "gold", 0.1],
+    ["1 g gold bar", "gold", 1 / 31.1034768], ["10 g gold bar", "gold", 10 / 31.1034768], ["1 oz gold bar", "gold", 1], ["100 g gold bar", "gold", 100 / 31.1034768], ["1 kg gold bar", "gold", 1000 / 31.1034768],
+    ["1 oz silver coin (Eagle, Maple)", "silver", 1], ["10 oz silver bar", "silver", 10], ["100 oz silver bar", "silver", 100], ["1 kg silver bar", "silver", 1000 / 31.1034768],
+    ["$1 face value pre-1965 US 90% silver coins", "silver", 0.715], ["100 g sterling silver (92.5%)", "silver", 92.5 / 31.1034768]];
+  const cur = () => { const b = $("#basis").value; const g = b === "custom" ? +$("#cust-gold").value : b === "spot" ? px.gold.spot : px.gold.futures; const s = b === "custom" ? +$("#cust-silver").value : b === "spot" ? px.silver.spot : px.silver.futures; return { gold: g || 0, silver: s || 0 }; };
+  const money = (v) => "$" + Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const recalc = () => {
+    const p = cur(); let total = 0; const store = {};
+    for (const m of ["gold", "silver"]) {
+      $(`#px-${m}`).textContent = fmt.n(p[m]);
+      const amt = parseFloat($(`#amt-${m}`).value) || 0, unit = $(`#unit-${m}`).value;
+      const oz = amt * OZ[unit]; const v = oz * p[m]; total += v;
+      $(`#val-${m}`).textContent = money(v) + (unit !== "oz" && amt ? ` (${oz.toFixed(3)} troy oz)` : "");
+      const usd = parseFloat($(`#usd-${m}`).value) || 0; const oz2 = p[m] ? usd / p[m] : 0;
+      $(`#oz-${m}`).textContent = `${oz2.toFixed(4)} troy oz`; $(`#g-${m}`).textContent = usd ? `(${(oz2 * 31.1034768).toFixed(2)} g)` : "";
+      store["amt-" + m] = $(`#amt-${m}`).value; store["usd-" + m] = $(`#usd-${m}`).value;
+    }
+    $("#val-total").textContent = money(total);
+    $("#items").innerHTML = items.map(([n, m, oz]) => `<tr><td>${esc(n)}</td><td class="num">${oz.toFixed(3)}</td><td class="num">${money(oz * p[m])}</td></tr>`).join("");
+    $("#custom-wrap").classList.toggle("hidden", $("#basis").value !== "custom");
+    try { localStorage.setItem("calc", JSON.stringify(store)); } catch {}
+  };
+  $("#calc-ts").textContent = `${px.gold.ts}, ${px.gold.contract || "GC=F"} / ${px.silver.contract || "SI=F"}`;
+  $$("#tab-calculator input, #tab-calculator select").forEach(el => { el.oninput = recalc; el.onchange = recalc; });
+  $("#cust-gold").value = px.gold.futures?.toFixed(2) || ""; $("#cust-silver").value = px.silver.futures?.toFixed(2) || "";
+  recalc();
+}
+
+const TABS = { overview: tabOverview, today: tabToday, drivers: tabDrivers, positioning: tabPositioning, physical: tabPhysical, news: tabNews, events: tabEvents, fundamentals: tabFundamentals, research: tabResearch, calculator: tabCalculator, status: tabStatus };
 
 (async function main() {
   if (window.__REMOTE_DATA__) await loadRemote();

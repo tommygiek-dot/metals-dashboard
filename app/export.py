@@ -26,7 +26,7 @@ PATHS = [
     "/api/news?clustered=true&limit=120", "/api/events?days_ahead=60&days_back=7", "/api/briefing", "/api/briefings",
     "/api/physical", "/api/premiums", "/api/fundamentals", "/api/research", "/api/status",
     "/api/series/gold_front_oi?range=1y", "/api/series/silver_front_oi?range=1y",
-] + [f"/api/snapshot/{t}" for t in ("overview", "today", "drivers", "positioning", "physical", "news", "events", "fundamentals", "research", "status")] \
+] + [f"/api/snapshot/{t}" for t in ("overview", "today", "drivers", "positioning", "physical", "news", "events", "fundamentals", "research", "calculator", "status")] \
   + [f"/api/series/{m}_fut_cont?range={r}" for m in ("gold", "silver") for r in ("1m", "6m", "1y", "5y", "max")] \
   + [f"/api/series/{m}_fut_5m?range={r}" for m in ("gold", "silver") for r in ("1d", "5d")] \
   + [f"/api/cot?metal={m}&report_type={t}&weeks=260" for m in ("gold", "silver") for t in ("disagg_fut", "disagg_futopt", "legacy_fut", "legacy_futopt")]

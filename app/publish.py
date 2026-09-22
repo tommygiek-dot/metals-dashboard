@@ -25,7 +25,8 @@ PAGES_URL = PUB.get("url", "https://tommygiek-dot.github.io/metals-dashboard/")
 
 
 def _git(args: list[str], cwd: Path) -> str:
-    r = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, timeout=300)
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)   # never pop a console when running from pythonw
+    r = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, timeout=300, creationflags=flags)
     if r.returncode != 0:
         raise RuntimeError(f"git {' '.join(args)} failed: {r.stderr.strip()[:400]}")
     return r.stdout

@@ -62,7 +62,7 @@ def _curl(url: str, tries: int = 2, timeout: int = 25) -> bytes:
     last = None
     for i in range(tries):
         r = subprocess.run(["curl", "-sS", "-L", "--http1.1", "-m", str(timeout), "-A", BROWSER_UA, url],
-                           capture_output=True)
+                           capture_output=True, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         if r.returncode == 0 and r.stdout.strip():
             _consecutive_failures = 0
             return r.stdout

@@ -291,7 +291,15 @@ def status() -> list[str]:
     return out
 
 
-SNAPSHOTS = {"overview": overview, "today": today, "drivers": drivers, "positioning": positioning, "physical": physical,
+def calculator() -> list[str]:
+    g = period_changes("gold_fut_cont"); s = period_changes("silver_fut_cont")
+    if not (g.get("available") and s.get("available")):
+        return ["No prices loaded yet."]
+    return [f"At today's prices one troy ounce of gold is worth ${g['last']:,.2f} and one troy ounce of silver ${s['last']:,.2f} (futures, as of {g['last_ts']}).",
+            "Type an amount in ounces or grams to see its dollar value, or a dollar figure to see how much metal it buys. Coins and bars sell for more than this and buy back for less; the Physical tab shows today's dealer premiums."]
+
+
+SNAPSHOTS = {"calculator": calculator, "overview": overview, "today": today, "drivers": drivers, "positioning": positioning, "physical": physical,
              "news": news, "events": events, "fundamentals": fundamentals, "research": research, "status": status}
 
 
