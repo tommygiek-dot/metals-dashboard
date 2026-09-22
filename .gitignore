@@ -1,0 +1,8 @@
+.env
+data/*.sqlite*
+data/raw/
+exports/
+data/inbox/*
+!data/inbox/.gitkeep
+__pycache__/
+*.pyc

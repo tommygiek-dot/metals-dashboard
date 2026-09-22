@@ -1,0 +1,16 @@
+# Reference repositories — adopt / study / skip (assessed 2026-09-21)
+
+Two bounded passes (GitHub pages, raw files, PyPI; nothing cloned). Versions are what PyPI showed that day.
+
+| Repo | License | Activity | Verdict | Why |
+|---|---|---|---|---|
+| OpenBB-finance/OpenBB | AGPL-3.0 | active (Jul 2026); `openbb` 4.7.2 | **Study** | 81 dependencies; its `openbb-cftc` calls the same free CFTC Socrata API we call directly; no COMEX inventory provider; FRED still needs a key; yfinance provider is a thin wrapper. |
+| mortada/fredapi | Apache-2.0 | `fredapi` 0.5.2 (May 2024); pandas only | **Adopt (optional)** | Only value over the keyless CSV is ALFRED vintages (`get_series_all_releases`, `get_series_as_of_date`). Needs a free FRED key. Wired in only when `FRED_API_KEY` is set. |
+| philsv/pycot | MIT | code last touched Aug 2024; PyPI name is `pycot-reports` 0.1.2 | **Study** | Downloads annual CFTC zips and selects contracts by exact *name* string (names drift across years). We select by CFTC contract code (gold `088691`, silver `084691`, verified live) through the Socrata API. Report-type table was useful reading. |
+| adbar/trafilatura | Apache-2.0 | 2.2.0 (Jul 2026) | **Adopt** | Metadata (title/author/date) + text extraction, feed discovery; lxml wheels on Windows. Pinned `trafilatura==2.2.0`. |
+| lbruton/StakTrakr | MIT | very active (Sep 2026) | **Adopt feed + UI ideas** | Vanilla-JS browser app, nothing to import. Its free keyless feed `api.staktrakr.com/data/v2` gives spot every ~20 min and dealer retail prices for common coins/bars (median/low/high + per-dealer). No published terms; poll at its `stale_after`, keep yfinance as primary. UI ideas taken: dealer price matrix with premium badge, best-price strip, sparkline cards with range chips, retail-vs-spot overlay, anomaly gate (>40% from median discarded). |
+| Entrap-Io/Gold-Regime-Shift | MIT | dead (term paper, Jan 2026) | **Study** | Daily 2008–Nov 2025: LBMA gold, 10y nominal, 10y TIPS real (GTII10), 10y breakeven, SPX, DXY, GPR index, CB reserves. Regime split at Jan 2022 chosen a priori; OLS on levels, in-sample only (daily R² ~0.2, monthly ~0.4). Input spreadsheet not committed → not reproducible as-is. Hypothesis we reproduce: rolling 60d correlation of gold returns vs ΔDFII10 was negative pre-2022 and has weakened since. |
+| csatzky/silver-commodity-market-timing | none | dead (Oct 2021) | **Study** | Daily 2018-04 → 2021-03: ΔXAG on Δbreakeven (file says 10y, series is T5YIE — inconsistency) and ΔDGS10; β≈+0.2/−0.1, adj R² 0.10; 15-day fair-value indicator, in-sample only. No license → reimplemented from the description, never copied. Hypothesis: freeze 2018–21 betas, test indicator hit-rate 2022→now out of sample. |
+| schen9999/financial-agent | none | active (Sep 2026) | **Study** | Real but overbuilt (LangGraph, Pinecone, Celery, k8s) equities briefer. Reusable idea: LLM judge labels each claim SUPPORTED / INFERENCE / UNSUPPORTED against the source context; it has no counter-evidence pass. We use the labels in the briefing schema and add a counter-evidence section; no code copied (unlicensed). |
+
+Not verified: StakTrakr terms/rate limits; whether OpenBB has any COMEX provider (none found); GLD data URL (see sources).

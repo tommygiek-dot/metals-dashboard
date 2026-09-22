@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metals — gold & silver intelligence</title>
+<link rel="stylesheet" href="/static/styles.css?v=0.2.0">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="dot au"></span><span class="dot ag"></span> Metals</div>
+  <nav id="nav">
+    <a href="#overview" data-tab="overview">Overview</a>
+    <a href="#today" data-tab="today">What matters today</a>
+    <a href="#drivers" data-tab="drivers">Drivers</a>
+    <a href="#positioning" data-tab="positioning">Positioning &amp; flows</a>
+    <a href="#physical" data-tab="physical">Physical</a>
+    <a href="#news" data-tab="news">News</a>
+    <a href="#events" data-tab="events">Events</a>
+    <a href="#fundamentals" data-tab="fundamentals">Fundamentals</a>
+    <a href="#research" data-tab="research">Research</a>
+    <a href="#status" data-tab="status">Status</a>
+  </nav>
+  <div class="tools">
+    <span id="session-pill" class="pill">…</span>
+    <span id="clock" class="muted"></span>
+    <button id="export" title="Save a single HTML file of every tab with today's data — email it or open it anywhere">Download snapshot</button>
+    <button id="theme" title="Toggle dark mode">◐</button>
+  </div>
+</header>
+
+<main>
+  <section id="tab-overview" class="tab"></section>
+  <section id="tab-today" class="tab hidden"></section>
+  <section id="tab-drivers" class="tab hidden"></section>
+  <section id="tab-positioning" class="tab hidden"></section>
+  <section id="tab-physical" class="tab hidden"></section>
+  <section id="tab-news" class="tab hidden"></section>
+  <section id="tab-events" class="tab hidden"></section>
+  <section id="tab-fundamentals" class="tab hidden"></section>
+  <section id="tab-research" class="tab hidden"></section>
+  <section id="tab-status" class="tab hidden"></section>
+</main>
+
+<footer class="muted small">
+  Personal research dashboard. Prices are delayed/indicative (Yahoo Finance) unless a card says otherwise. Nothing here is investment advice.
+  <span id="tz-note"></span>
+</footer>
+<script src="/static/app.js?v=0.2.0"></script>
+</body>
+</html>

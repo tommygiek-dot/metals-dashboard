@@ -1,0 +1,14 @@
+fastapi==0.141.1
+uvicorn==0.53.0
+apscheduler==3.11.3
+yfinance==1.5.2
+pandas==3.0.5
+numpy==2.5.1
+requests==2.34.2
+feedparser==6.0.14
+trafilatura==2.2.0
+xlrd==2.0.2
+openpyxl
+python-dotenv
+jinja2
+# optional: fredapi==0.5.2 (only used when FRED_API_KEY is set)

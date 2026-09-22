@@ -1,0 +1,19 @@
+[display]
+timezone = "America/Phoenix"   # any IANA zone; the UI shows times in this zone
+
+[server]
+host = "127.0.0.1"
+port = 8765
+
+[cadence_minutes]
+prices_intraday = 5      # only while COMEX Globex is open
+prices_daily = 60
+spot_stak = 20
+retail_stak = 30
+fred = 360
+treasury = 360
+cftc = 720
+etf_holdings = 360
+news = 30
+comex_inbox = 15
+briefing = 60
