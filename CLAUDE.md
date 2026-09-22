@@ -31,6 +31,13 @@ Treasury curves, COT history and news; the UI is usable within ~2 minutes. Optio
 (not wired; briefing is deterministic). COMEX warehouse stocks: download Gold_Stocks.xls / Silver_stocks.xls from
 cmegroup.com in a browser and drop them in `data/inbox/`.
 
+## Sharing
+- **GitHub:** private repo `tommygiek-dot/metals-dashboard` (created Sep 21, 2026). Commit and push when Tom says
+  "update the GitHub". `.env`, the SQLite file, `data/raw/`, `data/inbox/` and `exports/` are git-ignored.
+- **Snapshot export:** the "Download snapshot" header button (or `python -m app.export`) writes one self-contained
+  HTML file to `exports/` with every tab and today's data embedded; it opens anywhere with no server (charts need
+  internet for the Chart.js CDN). Past snapshots are browsable at `/exports/`. This is how Tom sends it to his dad.
+
 ## State (2026-09-21)
 Stages 1–6 built and verified against live sources (see CHECKLIST). Open: GLD holdings URL, FRED reliability
 without a key, CME calendar dates (option expiry / first notice) need a browser session.

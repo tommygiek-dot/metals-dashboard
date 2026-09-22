@@ -44,6 +44,9 @@ Keep this current. Sections: Decisions · Done · Open issues · Next steps.
 - 2026-09-21 "At a glance" plain-English summary box on every tab (`app/analytics/snapshots.py`, `/api/snapshot/{tab}`),
   rule-based from the tab's own data. Static asset links carry `?v=` stamps: bump them in `index.html` when app.js/styles.css change.
 
+- 2026-09-21 One-file HTML snapshot export (`app/export.py`, header button, `/api/export`, `/exports/` browsable) for
+  emailing the dashboard. Project pushed to private GitHub repo `tommygiek-dot/metals-dashboard`.
+
 ## Open issues
 - **GLD ounces:** old `GLD_US_archive_EN.csv` now serves a PDF; issuer page is JS-rendered. Find the real data URL in
   a browser network tab, then add to `etf_holdings.FUNDS`. Gold ETF read = IAU only until then.
