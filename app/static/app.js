@@ -445,7 +445,7 @@ async function tabCalculator() {
       $(`#val-${m}`).textContent = money(v) + (unit !== "oz" && amt ? ` (${oz.toFixed(3)} troy oz)` : "");
       const usd = parseFloat($(`#usd-${m}`).value) || 0; const oz2 = p[m] ? usd / p[m] : 0;
       $(`#oz-${m}`).textContent = `${oz2.toFixed(4)} troy oz`; $(`#g-${m}`).textContent = usd ? `(${(oz2 * 31.1034768).toFixed(2)} g)` : "";
-      store["amt-" + m] = $(`#amt-${m}`).value; store["usd-" + m] = $(`#usd-${m}`).value;
+      store["amt-" + m] = $(`#amt-${m}`).value; store["usd-" + m] = $(`#usd-${m}`).value; store["unit-" + m] = unit;
     }
     $("#val-total").textContent = money(total);
     $("#items").innerHTML = items.map(([n, m, oz]) => `<tr><td>${esc(n)}</td><td class="num">${oz.toFixed(3)}</td><td class="num">${money(oz * p[m])}</td></tr>`).join("");
@@ -455,6 +455,7 @@ async function tabCalculator() {
   $("#calc-ts").textContent = `${px.gold.ts}, ${px.gold.contract || "GC=F"} / ${px.silver.contract || "SI=F"}`;
   $$("#tab-calculator input, #tab-calculator select").forEach(el => { el.oninput = recalc; el.onchange = recalc; });
   $("#cust-gold").value = px.gold.futures?.toFixed(2) || ""; $("#cust-silver").value = px.silver.futures?.toFixed(2) || "";
+  for (const m of ["gold", "silver"]) if (saved["unit-" + m]) $(`#unit-${m}`).value = saved["unit-" + m];
   recalc();
 }
 
