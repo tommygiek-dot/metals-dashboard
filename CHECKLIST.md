@@ -47,7 +47,13 @@ Keep this current. Sections: Decisions · Done · Open issues · Next steps.
 - 2026-09-21 One-file HTML snapshot export (`app/export.py`, header button, `/api/export`, `/exports/` browsable) for
   emailing the dashboard. Project pushed to private GitHub repo `tommygiek-dot/metals-dashboard`.
 
+- 2026-09-21 Live copy on GitHub Pages (https://tommygiek-dot.github.io/metals-dashboard/): `app/publish.py`, worker job
+  `publish` every 20 min (orphan force-push of `gh-pages`, history stays one commit). Repo made public with Tom's OK.
+  Snapshot files fetch the published data.json first and fall back to their embedded copy.
+
 ## Open issues
+- **Live page only updates while Tom's PC runs `python run.py`.** A Task Scheduler entry at login is the next step
+  (Tom to confirm). If the PC is off, the page shows the last published stamp.
 - **GLD ounces:** old `GLD_US_archive_EN.csv` now serves a PDF; issuer page is JS-rendered. Find the real data URL in
   a browser network tab, then add to `etf_holdings.FUNDS`. Gold ETF read = IAU only until then.
 - **FRED intermittent** without a key. Ask Tom for a free key (1 minute at fred.stlouisfed.org) → `.env`.

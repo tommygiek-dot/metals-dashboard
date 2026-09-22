@@ -5,6 +5,13 @@ timezone = "America/Phoenix"   # any IANA zone; the UI shows times in this zone
 host = "127.0.0.1"
 port = 8765
 
+[publish]
+enabled = true                      # push a live copy to GitHub Pages from the worker
+every_minutes = 20
+remote = "https://github.com/tommygiek-dot/metals-dashboard.git"
+branch = "gh-pages"
+url = "https://tommygiek-dot.github.io/metals-dashboard/"
+
 [cadence_minutes]
 prices_intraday = 5      # only while COMEX Globex is open
 prices_daily = 60

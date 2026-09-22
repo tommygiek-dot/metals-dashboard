@@ -15,9 +15,26 @@ const fmt = {
 const cls = (v, thr = 0) => v == null ? "flat" : v > thr ? "up" : v < -thr ? "down" : "flat";
 const ord = (v) => { if (v == null || isNaN(v)) return "n/a"; const n = Math.round(v), s = ["th", "st", "nd", "rd"], k = n % 100; return n + (s[(k - 20) % 10] || s[k] || s[0]); };
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const EXPORTED = !!window.__EXPORT__;
+let EXPORTED = !!window.__EXPORT__ || !!window.__REMOTE_DATA__;
+let DATA_STAMP = window.__EXPORT_STAMP__ || "";
+let DATA_MODE = window.__EXPORT__ ? "saved" : "none";
+async function loadRemote() {
+  /* Saved/hosted pages: try the published data.json first (fresh), fall back to the embedded copy. */
+  const url = window.__REMOTE_DATA__; if (!url) return false;
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 12000);
+    const r = await fetch(url + (url.includes("?") ? "&" : "?") + "t=" + Date.now(), { cache: "no-store", signal: ctl.signal });
+    clearTimeout(t);
+    if (!r.ok) return false;
+    const d = await r.json();
+    if (!d || !d["/api/config"]) return false;
+    window.__EXPORT__ = d; DATA_STAMP = d._stamp || DATA_STAMP; DATA_MODE = "live"; EXPORTED = true;
+    return true;
+  } catch { return false; }
+}
 async function api(path) {
   if (EXPORTED) {
+    if (!window.__EXPORT__) throw new Error("no data: the published data could not be fetched and nothing is embedded");
     const X = window.__EXPORT__;
     if (path in X) return X[path];
     const base = path.split("?")[0];
@@ -379,11 +396,17 @@ async function tabStatus() {
 const TABS = { overview: tabOverview, today: tabToday, drivers: tabDrivers, positioning: tabPositioning, physical: tabPhysical, news: tabNews, events: tabEvents, fundamentals: tabFundamentals, research: tabResearch, status: tabStatus };
 
 (async function main() {
+  if (window.__REMOTE_DATA__) await loadRemote();
   try { CFG = await api("/api/config"); } catch {}
   $("#tz-note").textContent = ` Times in ${CFG.display_tz}.`;
   if (EXPORTED) {
     document.body.classList.add("exported");
-    const b = $("#export"); if (b) { b.textContent = `Snapshot ${window.__EXPORT_STAMP__ || ""}`; b.disabled = true; }
+    const b = $("#export"); if (b) { b.textContent = DATA_MODE === "live" ? `Live · data as of ${DATA_STAMP}` : `Saved snapshot · ${DATA_STAMP}`; b.disabled = true; }
+    const ban = $("#snapshot-banner");
+    if (ban) ban.textContent = DATA_MODE === "live"
+      ? `Live copy: data as of ${DATA_STAMP}. It refreshes every time you reload the page (republished from Tom's dashboard about every 20 minutes while his computer is on).`
+      : `Saved snapshot from ${DATA_STAMP}. Fresh data could not be fetched right now; reload when online to update.`;
+    if (DATA_MODE === "live") setInterval(async () => { if (await loadRemote()) { const b2 = $("#export"); if (b2) b2.textContent = `Live · data as of ${DATA_STAMP}`; Object.keys(loaded).forEach(k => loaded[k] = false); showTab(location.hash.slice(1) || "overview"); } }, 20 * 60 * 1000);
   } else {
     const b = $("#export"); if (b) b.onclick = () => { b.textContent = "Building…"; window.location.href = "/api/export"; setTimeout(() => { b.textContent = "Download snapshot"; }, 4000); };
   }

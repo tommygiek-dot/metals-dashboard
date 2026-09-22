@@ -18,7 +18,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
 
 from . import db
-from .config import CADENCE
+from .config import CADENCE, CFG
 from .analytics.changes import is_globex_metals_open
 
 log = logging.getLogger(__name__)
@@ -101,6 +101,15 @@ def _calendar():
     return cal.update(), ""
 
 
+def _publish():
+    from .config import CFG
+    if not CFG.get("publish", {}).get("enabled"):
+        return 0, "publishing disabled in config.toml"
+    from . import publish
+    r = publish.publish()
+    return 1, f"published data as of {r['stamp']} ({r['bytes'] // 1024} KB) to {r['url']}"
+
+
 def _briefing():
     from .analytics import briefing, drivers
     drivers.driver_board(persist=True)
@@ -124,6 +133,7 @@ JOBS = {
     "bls": _bls,
     "calendar": _calendar,
     "briefing": _briefing,
+    "publish": _publish,
 }
 
 
@@ -161,13 +171,16 @@ def build_scheduler() -> BackgroundScheduler:
     s.add_job(run_job, CronTrigger(hour="13,14", minute=5, timezone="UTC"), args=["bls"], id="bls")  # after 8:30 ET releases
     s.add_job(run_job, IntervalTrigger(hours=24), args=["calendar"], id="calendar")
     s.add_job(run_job, IntervalTrigger(minutes=m("briefing", 60)), args=["briefing"], id="briefing")
+    pub = CFG.get("publish", {})
+    if pub.get("enabled"):
+        s.add_job(run_job, IntervalTrigger(minutes=int(pub.get("every_minutes", 20))), args=["publish"], id="publish")
     return s
 
 
 def bootstrap(first_run: bool) -> None:
     """Sequential first pass so the UI is populated within a couple of minutes of first start."""
     order = ["prices_backfill" if first_run else "prices_daily", "prices_daily", "spot_stak", "treasury", "nyfed",
-             "cftc", "etf_holdings", "retail_stak", "calendar", "news", "comex_inbox", "bls", "briefing", "fred"]
+             "cftc", "etf_holdings", "retail_stak", "calendar", "news", "comex_inbox", "bls", "briefing", "publish", "fred"]
     for j in order:
         r = run_job(j)
         log.info("bootstrap %s -> %s", j, "ok" if r.get("ok") else r.get("error"))

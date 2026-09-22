@@ -32,8 +32,13 @@ Treasury curves, COT history and news; the UI is usable within ~2 minutes. Optio
 cmegroup.com in a browser and drop them in `data/inbox/`.
 
 ## Sharing
-- **GitHub:** private repo `tommygiek-dot/metals-dashboard` (created Sep 21, 2026). Commit and push when Tom says
-  "update the GitHub". `.env`, the SQLite file, `data/raw/`, `data/inbox/` and `exports/` are git-ignored.
+- **GitHub:** public repo `tommygiek-dot/metals-dashboard` (created Sep 21, 2026; made public the same day with
+  Tom's OK so Pages works). Commit and push when Tom says "update the GitHub". `.env`, the SQLite file,
+  `data/raw/`, `data/inbox/` and `exports/` are git-ignored.
+- **Live copy for Tom's dad:** https://tommygiek-dot.github.io/metals-dashboard/ — GitHub Pages serving the
+  `gh-pages` branch (index.html + data.json, ~4 MB). The worker's `publish` job rebuilds and force-pushes it as a
+  single-commit orphan branch every 20 minutes while `python run.py` is running (`config.toml [publish]`;
+  `python -m app.publish` by hand). Saved snapshot files also fetch that data.json when opened online.
 - **Snapshot export:** the "Download snapshot" header button (or `python -m app.export`) writes one self-contained
   HTML file to `exports/` with every tab and today's data embedded; it opens anywhere with no server (charts need
   internet for the Chart.js CDN). Past snapshots are browsable at `/exports/`. This is how Tom sends it to his dad.
