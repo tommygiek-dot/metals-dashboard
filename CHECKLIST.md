@@ -51,6 +51,12 @@ Keep this current. Sections: Decisions · Done · Open issues · Next steps.
   `publish` every 20 min (orphan force-push of `gh-pages`, history stays one commit). Repo made public with Tom's OK.
   Snapshot files fetch the published data.json first and fall back to their embedded copy.
 
+- 2026-09-28 Gold options-implied volatility: CBOE GVZ via yfinance `^GVZ` (series `gvz`, 2008→) with FRED `GVZCLS`
+  (`gvzcls`, lags days) as fallback. `changes.implied_move()` = GVZ/√252, judged against the GVZ close at the *prior*
+  price close (no same-day lookahead). Shown on the gold card, Related markets, driver board (`gold_implied_vol`,
+  stance always mixed — vol has no direction), briefing facts + sigma note, Overview summary. Silver has no
+  equivalent (VXSLVCLS ended Feb 2022), so the briefing's unknowns line now says silver-only. app.js `?v=0.3.2`.
+
 ## Open issues
 - **Live page only updates while Tom's PC runs `python run.py`.** A Task Scheduler entry at login is the next step
   (Tom to confirm). If the PC is off, the page shows the last published stamp.

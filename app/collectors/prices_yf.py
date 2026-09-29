@@ -7,7 +7,7 @@ Series written
   gold_fut_5m / silver_fut_5m          5-minute bars of the same continuous symbol (intraday view).
   fut_<TICKER>                         individual contract months (GCZ26.CMX ...) daily close + volume.
   gold_front_oi / silver_front_oi      daily open interest of the front contract from Yahoo's quote summary.
-  dxy, us10y, copper_fut, wti_fut, spx, vix, tip_etf, gld, slv, iau, paxg  daily closes (+ dxy 5m).
+  dxy, us10y, copper_fut, wti_fut, spx, vix, gvz, tip_etf, gld, slv, iau, paxg  daily closes (+ dxy 5m).
 """
 from __future__ import annotations
 import logging
@@ -33,6 +33,7 @@ RELATED = {
     "wti_fut":    ("CL=F", "WTI crude futures, NYMEX front-month (Yahoo continuous)", "future_continuous", "USD/bbl"),
     "spx":        ("^GSPC", "S&P 500 index", "index", "index"),
     "vix":        ("^VIX", "CBOE VIX", "index", "index"),
+    "gvz":        ("^GVZ", "CBOE Gold ETF Volatility Index (GVZ, from GLD options)", "index", "index"),
     "tip_etf":    ("TIP", "iShares TIPS Bond ETF (price)", "etf", "USD"),
     "gld":        ("GLD", "SPDR Gold Shares (ETF proxy, price)", "etf", "USD"),
     "slv":        ("SLV", "iShares Silver Trust (ETF proxy, price)", "etf", "USD"),

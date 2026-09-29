@@ -5,6 +5,7 @@ Definitions (shown in the UI's method notes):
     Yahoo's daily bar for the current session updates intraday, so during a session "today" is a live change.
   * 1w / 1m / 3m / YTD / 1y changes compare the latest close with the last close on or before the reference date.
   * Realized volatility = annualized stdev of daily log returns over N sessions (N = 10, 21, 63).
+  * Implied daily move (gold only) = CBOE GVZ / sqrt(252): the 1-sigma one-day move priced by GLD options.
   * Gold/silver ratio = gold close / silver close on the same date, same instrument family (continuous futures).
 """
 from __future__ import annotations
@@ -96,6 +97,49 @@ def realized_vol(series_id: str, windows=(10, 21, 63)) -> dict:
         else:
             out[f"{w}d"] = None
     return out
+
+
+TRADING_DAYS = 252
+GOLD_IMPLIED_VOL_IDS = ("gvz", "gvzcls")   # Yahoo ^GVZ first (same-day), FRED GVZCLS copy as fallback (lags days)
+
+
+def implied_move(metal_sid: str = "gold_fut_cont", vol_ids: tuple = GOLD_IMPLIED_VOL_IDS) -> dict:
+    """Options-implied one-day move from a CBOE volatility index (GVZ for gold): index / sqrt(252) = the
+    one-standard-deviation daily move the options market prices, in percent.
+
+    The latest move is judged against the index close *on or before the prior price close* (the expectation
+    in force when the move started), so today's volatility spike can't inflate the yardstick it is measured by.
+    A +-1 sigma band is breached on roughly 1 day in 3, so only ratios well above 1 are unusual.
+    GVZ is priced from GLD options (US equity hours, 30-day horizon); the futures move is a close proxy, not
+    the same instrument. No silver equivalent exists: CBOE's VXSLV stopped publishing in Feb 2022."""
+    pc = period_changes(metal_sid)
+    for vid in vol_ids:
+        rows = _daily(vid, since=(date.today() - timedelta(days=45)).isoformat())
+        rows = [r for r in rows if r["value"]]
+        if not rows:
+            continue
+        latest = rows[-1]
+        out = {"available": True, "series_id": vid, "latest": latest["value"], "latest_ts": latest["ts"],
+               "expected_next_pct": latest["value"] / math.sqrt(TRADING_DAYS),
+               "move_pct": None, "ratio": None, "yardstick": None, "yardstick_ts": None, "expected_pct": None, "basis": None}
+        c1 = (pc.get("changes") or {}).get("1d") if pc.get("available") else None
+        if not c1 or c1.get("pct") is None:
+            return out
+        base_d = c1["base_ts"][:10]
+        ref = None
+        for r in rows:
+            if r["ts"][:10] <= base_d:
+                ref = r
+            else:
+                break
+        basis = "prior close"
+        if ref is None or (date.fromisoformat(base_d) - date.fromisoformat(ref["ts"][:10])).days > 5:
+            ref, basis = latest, "latest close (no index close near the prior price close)"
+        exp = ref["value"] / math.sqrt(TRADING_DAYS)
+        out.update({"move_pct": c1["pct"], "yardstick": ref["value"], "yardstick_ts": ref["ts"], "expected_pct": exp,
+                    "ratio": abs(c1["pct"]) / exp if exp else None, "basis": basis})
+        return out
+    return {"available": False}
 
 
 def ratio_series(limit_days: int = 3650) -> list[dict]:

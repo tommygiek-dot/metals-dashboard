@@ -12,7 +12,7 @@ from datetime import datetime, timezone, date
 
 from .. import db
 from ..config import ANALYTICS_VERSION
-from .changes import period_changes
+from .changes import period_changes, implied_move
 from . import flows, research
 
 
@@ -146,6 +146,17 @@ def driver_board(persist: bool = False) -> dict:
                         "stance_gold": "mixed", "stance_silver": _stance_from_change(c1, "pressure", 1.5),
                         "mechanism": "A volatility spike can lift gold as a haven, but forced deleveraging sells everything liquid, gold included (March 2020). Silver trades more like a risk asset. Direction depends on whether the stress is a liquidity event.",
                         "evidence": {"strength": "weak", "spx_1d_pct": (sp or {}).get("changes", {}).get("1d", {}) and (sp["changes"]["1d"] or {}).get("pct")}, "freshness": vx["freshness"]})
+    # --- 8b. Gold implied volatility (GVZ) ---
+    gv = _first_available("gvz", "gvzcls")
+    if gv:
+        c1 = (gv["changes"].get("1d") or {}).get("abs")
+        im = implied_move("gold_fut_cont")
+        drivers.append({"id": "gold_implied_vol", "name": "Gold implied volatility (CBOE GVZ)", "group": "risk", "kind": "catalyst" if c1 is not None and abs(c1) >= 2 else "condition", "observation": gv,
+                        "delta_1d": c1, "delta_1w": (gv["changes"].get("1w") or {}).get("abs"), "unit": "pts",
+                        "stance_gold": "mixed", "stance_silver": None,
+                        "extra": {"expected_daily_move_pct": im.get("expected_next_pct"), "last_move_vs_expected": im.get("ratio")},
+                        "mechanism": "GVZ is the 30-day volatility the options market prices into GLD; GVZ ÷ 15.9 is the one-standard-deviation daily move. It measures how big a move is expected, not which way, so it sets the yardstick for 'noise vs. a real move' rather than leaning either direction. A rising GVZ alongside a falling price usually means hedging demand; alongside a rally, chasing.",
+                        "evidence": {"strength": "context"}, "freshness": gv["freshness"]})
     # --- 9. Credit stress / liquidity ---
     hy = _first_available("bamlh0a0hym2")
     if hy:

@@ -118,6 +118,14 @@ async function tabOverview() {
   $("#session-pill").textContent = s.open ? "COMEX Globex open" : "COMEX Globex closed";
   $("#session-pill").className = "pill " + (s.open ? "open" : "closed");
   $("#session-pill").title = s.rule + " · now " + s.now_et + " ET";
+  // GVZ / sqrt(252) = options-implied 1-sigma daily move; the last move is judged against the index at the prior close
+  const impliedRow = (im) => {
+    if (!im || !im.available) return "";
+    const judged = im.ratio != null
+      ? `last move ${fmt.pct(im.move_pct)} = <b>${fmt.n(im.ratio, 1)}×</b> the ±${fmt.n(im.expected_pct, 2)}% expected (GVZ ${fmt.n(im.yardstick, 1)} at ${esc(im.basis)}) — ${im.ratio >= 2 ? "unusual" : im.ratio >= 1.5 ? "large" : "normal noise"}`
+      : "";
+    return `<span class="k">Implied daily move</span><span title="CBOE GVZ ÷ √252. A ±1σ band: about 1 day in 3 lands outside it, so only moves well beyond 1× are unusual. GVZ is priced from GLD options.">±${fmt.n(im.expected_next_pct, 2)}% expected next session (GVZ ${fmt.n(im.latest, 1)}, ${esc(String(im.latest_ts).slice(0, 10))})${judged ? "<br>" + judged : ""}</span>`;
+  };
   const metalCard = (m, name, sym) => {
     const c = m.changes, p = m.provenance, il = m.intraday_last, f = m.front;
     const c1 = c.changes?.["1d"];
@@ -130,6 +138,7 @@ async function tabOverview() {
         <span class="k">Last 5-min bar</span><span>${il ? `${fmt.n(il.value)} at ${fmt.t(il.ts)}` : "n/a (market closed or not collected yet)"}</span>
         <span class="k">Front contract</span><span>${f ? `${esc(f.meta?.short_name || "")} (${esc(f.meta?.contract || "")}) · expires ${esc(f.meta?.expire || "?")} · OI ${fmt.i(f.value)} contracts (Yahoo, indicative)` : "n/a"}</span>
         <span class="k">Realized vol (ann.)</span><span>10d ${fmt.n(m.realized_vol["10d"], 1)}% · 21d ${fmt.n(m.realized_vol["21d"], 1)}% · 63d ${fmt.n(m.realized_vol["63d"], 1)}%</span>
+        ${impliedRow(m.implied)}
       </div>
       <div class="ranges" data-chart="${sym}-chart" data-series="${sym === "au" ? "gold" : "silver"}">
         ${["1d", "5d", "1m", "6m", "1y", "5y", "max"].map(r => `<button data-range="${r}" class="${r === "6m" ? "active" : ""}">${r}</button>`).join("")}
@@ -169,6 +178,7 @@ async function tabOverview() {
           ${relRow("wti_fut", "WTI crude futures (NYMEX)", "USD/bbl", 2)}
           ${relRow("spx", "S&P 500", "index", 0)}
           ${relRow("vix", "VIX", "index", 2)}
+          ${relRow("gvz", "Gold volatility — CBOE GVZ", "index", 2, "30-day implied vol from GLD options; ÷ 15.9 = expected daily % move") || relRow("gvzcls", "Gold volatility — CBOE GVZ (FRED)", "index", 2, "FRED copy, lags several days; ÷ 15.9 = expected daily % move")}
           ${relRow("gld", "GLD (gold ETF proxy, price)", "USD", 2)}
           ${relRow("slv", "SLV (silver ETF proxy, price)", "USD", 2)}
           ${relRow("paxg", "PAXG (tokenized gold)", "USD/oz", 2)}

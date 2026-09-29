@@ -35,6 +35,7 @@ SERIES = {
     "dff":      ("DFF", "Effective federal funds rate", "pct", "daily", ""),
     "sofr":     ("SOFR", "Secured overnight financing rate", "pct", "daily", ""),
     "vixcls":   ("VIXCLS", "CBOE VIX close (FRED copy)", "index", "daily", ""),
+    "gvzcls":   ("GVZCLS", "CBOE Gold ETF Volatility Index (FRED copy)", "index", "daily", "Fallback for Yahoo ^GVZ; FRED's copy lags several days. Silver VXSLVCLS ended Feb 2022."),
     "dcoilwtico": ("DCOILWTICO", "WTI crude spot, Cushing (EIA via FRED)", "USD/bbl", "daily", ""),
     "walcl":    ("WALCL", "Fed total assets (H.4.1)", "USD mn", "weekly", "Wednesday level, released Thursday."),
     "wtregen":  ("WTREGEN", "Treasury General Account at the Fed", "USD mn", "weekly", ""),

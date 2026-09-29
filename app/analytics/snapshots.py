@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timezone, date
 
 from .. import db
-from .changes import period_changes, ratio_context, realized_vol, is_globex_metals_open, to_display_tz
+from .changes import period_changes, ratio_context, realized_vol, is_globex_metals_open, to_display_tz, implied_move
 
 
 def _pct(v, d=1):
@@ -39,6 +39,10 @@ def overview() -> list[str]:
         ytd = (pc["changes"].get("ytd") or {}).get("pct")
         parts.append(f"{metal} {_word_move(c1)} today at ${_n(pc['last'], 2)} ({_pct(c1)}), {_pct(c1w)} on the week and {_pct(ytd)} this year.")
     out += parts
+    im = implied_move("gold_fut_cont")
+    if im.get("ratio") is not None:
+        verdict = "well beyond what options priced in, so something real moved it" if im["ratio"] >= 2 else "bigger than usual but within reach of normal" if im["ratio"] >= 1.5 else "inside the normal range options priced in"
+        out.append(f"Gold options expected a move of about ±{im['expected_pct']:.1f}% a day; the last move was {im['ratio']:.1f} times that, {verdict}.")
     rc = ratio_context()
     if rc.get("available"):
         pct5 = rc["percentile_5y"]

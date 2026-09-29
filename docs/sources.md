@@ -4,7 +4,7 @@
 |---|---|---|---|---|
 | Gold/silver futures, continuous | yfinance `GC=F`, `SI=F` | free, no key | 5-min bars during session; daily EOD | "COMEX front-month (Yahoo continuous)". Yahoo rolls to the next active contract itself; we record which contract `GC=F` points at (`underlyingSymbol`, e.g. GCZ26) each day so rolls are visible. Not a spot price. |
 | Contract months (curve) | yfinance `GCZ26.CMX`, `GCG27.CMX`… `SIZ26.CMX`… | free | daily | Settlement/last per month; volume; OI for front month via `info.openInterest`. |
-| Related markets | yfinance `DX-Y.NYB` (ICE DXY), `^TNX`, `HG=F`, `CL=F`, `^GSPC`, `^VIX`, `TIP` | free | daily (+intraday for DXY) | DXY ≠ Fed trade-weighted index (that comes from FRED `DTWEXBGS`). |
+| Related markets | yfinance `DX-Y.NYB` (ICE DXY), `^TNX`, `HG=F`, `CL=F`, `^GSPC`, `^VIX`, `^GVZ`, `TIP` | free | daily (+intraday for DXY) | DXY ≠ Fed trade-weighted index (that comes from FRED `DTWEXBGS`). `^GVZ` = CBOE Gold ETF Volatility Index (added 2026-09-28; FRED `GVZCLS` fallback lags several days; silver `VXSLVCLS` discontinued Feb 2022). |
 | ETF proxies | yfinance `GLD`, `SLV`, `IAU`, `PAXG-USD` | free | daily | Labelled "ETF proxy" / "tokenized gold". |
 | Third-party spot | `api.staktrakr.com/data/v2/spot/latest.json`; `/spot/xau/YYYY/MM/DD.json` | free, no key, no published terms | every 20 min (`stale_after`) | "Aggregated spot (StakTrakr)". |
 | Dealer retail prices | `api.staktrakr.com/data/v2/retail/{slug}/latest.json` | free | every 30 min | Premium = (median retail − spot)/spot, per product size. |

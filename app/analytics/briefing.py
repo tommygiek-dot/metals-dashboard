@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 
 from .. import db
 from ..config import DISPLAY_TZ, ANALYTICS_VERSION
-from .changes import period_changes, ratio_context, realized_vol, is_globex_metals_open
+from .changes import period_changes, ratio_context, realized_vol, is_globex_metals_open, implied_move
 from .drivers import driver_board
 from .news_rank import list_news
 from .calendar_view import upcoming
@@ -51,12 +51,19 @@ def generate(persist: bool = True) -> dict:
         size = "flat" if move is None or abs(move) < 0.3 else ("modest" if abs(move) < 1.0 else ("notable" if abs(move) < 2.5 else "large"))
         v21 = vol.get("21d")
         sigma_note = ""
-        if v21 and move is not None:
+        im = implied_move(sid) if metal == "gold" else {"available": False}
+        if im.get("ratio") is not None:
+            # options-implied yardstick preferred: it is what the market expected before the move
+            sigma_note = f" ({im['ratio']:.1f}× the options-implied daily move of ±{im['expected_pct']:.2f}%, GVZ {im['yardstick']:.1f})"
+            facts.append({"text": f"Gold options (CBOE GVZ {im['yardstick']:.1f} at the {im['basis']}) priced a ±{im['expected_pct']:.2f}% one-day move; "
+                                  f"the actual move was {_fmt_pct(move)}, {im['ratio']:.1f}× that. A ±1σ band is breached about 1 day in 3, so under ~1.5× is ordinary.",
+                          "source": f"series:{im['series_id']}", "kind": "observed"})
+        elif v21 and move is not None:
             daily_sigma = v21 / (252 ** 0.5)
             z = move / daily_sigma if daily_sigma else None
             if z is not None:
                 sigma_note = f" ({abs(z):.1f}σ of the 21-day realized daily volatility)"
-        metals_txt[metal] = {"move_pct": move, "size": size, "sigma_note": sigma_note, "last": pc["last"], "last_ts": pc["last_ts"], "contract": contract, "vol": vol}
+        metals_txt[metal] = {"move_pct": move, "size": size, "sigma_note": sigma_note, "last": pc["last"], "last_ts": pc["last_ts"], "contract": contract, "vol": vol, "implied": im}
     rc = ratio_context()
     if rc.get("available"):
         facts.append({"text": f"Gold/silver ratio {rc['value']:.1f} (prior {rc['prev']:.1f} if available); {rc['percentile_5y']:.0f}th percentile of the last 5 years.",
@@ -144,7 +151,10 @@ def generate(persist: bool = True) -> dict:
     if not db.latest("dfii10"):
         unknowns.append("FRED unreachable; real yields and breakevens come from Treasury par curves instead of H.15 constant-maturity series.")
     unknowns.append("No market-implied Fed path (no free reliable source); policy expectations are read from official communications.")
-    unknowns.append("No options-implied volatility or skew (no free source); realized volatility only.")
+    if (metals_txt.get("gold") or {}).get("implied", {}).get("available"):
+        unknowns.append("No options-implied volatility for silver (CBOE's silver index ended in 2022) and no skew for either metal; silver uses realized volatility only.")
+    else:
+        unknowns.append("No options-implied volatility or skew collected yet; realized volatility only.")
 
     ev = upcoming(14, 0)["events"][:8]
     body = {"date": local_date, "tz": DISPLAY_TZ, "generated_at": now.isoformat(timespec="seconds"), "session": is_globex_metals_open(now),

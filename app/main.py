@@ -65,9 +65,10 @@ def api_overview():
         last5 = db.latest(sid5)
         front = db.latest(oi)
         metals[metal] = {"changes": pc, "provenance": prov, "realized_vol": ch.realized_vol(sid),
-                         "intraday_last": last5, "front": front}
+                         "intraday_last": last5, "front": front,
+                         "implied": ch.implied_move(sid) if metal == "gold" else {"available": False}}
     related = {}
-    for sid in ("dxy", "us10y", "copper_fut", "wti_fut", "spx", "vix", "gld", "slv", "iau", "paxg", "tip_etf",
+    for sid in ("dxy", "us10y", "copper_fut", "wti_fut", "spx", "vix", "gvz", "gvzcls", "gld", "slv", "iau", "paxg", "tip_etf",
                 "dfii10", "dgs10", "dgs2", "t10yie", "t5yie", "dtwexbgs", "dff", "ust_10y", "ust_real_10y", "ust_be_10y",
                 "nyfed_effr", "stak_spot_gold_daily", "stak_spot_silver_daily"):
         if db.series_meta(sid):
